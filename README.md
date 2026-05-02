@@ -54,5 +54,5 @@ The model follows the Transformer encoder logic:
 
 ##  Author
 **V. Mohammed Sufiyan**  
-*Computer Applications Student & AI Content Creator*
+*Computer Applications Student*
 
