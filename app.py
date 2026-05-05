@@ -3,28 +3,41 @@ import tensorflow as tf
 import pickle
 import numpy as np
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-
-
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Embedding, Add, MultiHeadAttention, LayerNormalization, GlobalAveragePooling1D, Dense, Dropout
 @st.cache_resource
 def load_assets():
-    # 1. Load the model structure and weights ONLY
-    # This bypasses the serialization of the optimizer/loss which causes the TypeError
-    model = tf.keras.models.load_model(
-        'multi_class_transformer.keras', 
-        compile=False 
-    )
+    seq_len = 37 
+    inputs = Input(shape=(seq_len,))
+    e = Embedding(input_dim=20000, output_dim=64)(inputs)
+    pos_indices = tf.range(start=0, limit=seq_len, delta=1)
+    pos_indices = tf.expand_dims(pos_indices, axis=0)
+    p = Embedding(input_dim=seq_len, output_dim=64)(pos_indices)
     
-    # 2. Re-compile manually (optional, but good for stability)
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
+    x = Add()([e, p])
+    x = LayerNormalization()(x)
+    
+    attentions = MultiHeadAttention(num_heads=2, key_dim=64)(x, x)
+    norm = LayerNormalization()(attentions)
+    drop1 = Dropout(0.5)(norm)
+    
+    x_flat = GlobalAveragePooling1D()(drop1)
+    hidden = Dense(64, activation='relu')(x_flat)
+    drop2 = Dropout(0.3)(hidden)
+    outputs = Dense(4, activation='softmax')(drop2)
+    
+    model = Model(inputs=inputs, outputs=outputs)
+    
+    model.load_weights('multi_class_transformer.keras')
+    
     with open('tokenizer.pkl', 'rb') as f:
         tokenizer = pickle.load(f)
     with open('label_encoder.pkl', 'rb') as f:
         le = pickle.load(f)
         
     return model, tokenizer, le
-model, tokenizer, le = load_assets()
 
+model, tokenizer, le = load_assets()
 st.title("📰 News Topic Classifier")
 st.markdown("Powered by **Transformer Architecture**")
 
