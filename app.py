@@ -8,13 +8,22 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 @st.cache_resource
 def load_assets():
-    model = tf.keras.models.load_model('multi_class_transformer.keras')
+    custom_dict = {
+        "MultiHeadAttention": tf.keras.layers.MultiHeadAttention,
+        "LayerNormalization": tf.keras.layers.LayerNormalization
+    }
+    
+    # Update this line with the custom_objects argument
+    model = tf.keras.models.load_model(
+        'multi_class_transformer.keras', 
+        custom_objects=custom_dict
+    )
+    
     with open('tokenizer.pkl', 'rb') as f:
         tokenizer = pickle.load(f)
     with open('label_encoder.pkl', 'rb') as f:
         le = pickle.load(f)
     return model, tokenizer, le
-
 model, tokenizer, le = load_assets()
 
 st.title("📰 News Topic Classifier")
