@@ -5,24 +5,23 @@ import numpy as np
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 
-
 @st.cache_resource
 def load_assets():
-    custom_dict = {
-        "MultiHeadAttention": tf.keras.layers.MultiHeadAttention,
-        "LayerNormalization": tf.keras.layers.LayerNormalization
-    }
-    
-    # Update this line with the custom_objects argument
+    # 1. Load the model structure and weights ONLY
+    # This bypasses the serialization of the optimizer/loss which causes the TypeError
     model = tf.keras.models.load_model(
         'multi_class_transformer.keras', 
-        custom_objects=custom_dict
+        compile=False 
     )
     
+    # 2. Re-compile manually (optional, but good for stability)
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
     with open('tokenizer.pkl', 'rb') as f:
         tokenizer = pickle.load(f)
     with open('label_encoder.pkl', 'rb') as f:
         le = pickle.load(f)
+        
     return model, tokenizer, le
 model, tokenizer, le = load_assets()
 
